@@ -1,0 +1,79 @@
+how to convert rows to columns and vice versa without using pivot functions.  
+
+Below is the script to create table and data:
+
+create table emp_compensation (
+emp_id int,
+salary_component_type varchar(20),
+val int
+);
+insert into emp_compensation
+values (1,'salary',10000),(1,'bonus',5000),(1,'hike_percent',10)
+, (2,'salary',15000),(2,'bonus',7000),(2,'hike_percent',8)
+, (3,'salary',12000),(3,'bonus',6000),(3,'hike_percent',7);
+
+--------------------------------------------------------------------------------------------------------------------------
+select * from emp_compensation;
+
+1	salary	10000
+1	bonus	5000
+1	hike_percent	10
+2	salary	15000
+2	bonus	7000
+2	hike_percent	8
+3	salary	12000
+3	bonus	6000
+3	hike_percent	7
+
+## want to pivot to get below desired output 
+
+select
+emp_id,
+sum(case when salary_component_type = 'salary' then val end) as 'Salary',
+ sum(case  when salary_component_type = 'bonus' then val end) as 'Bonus',
+ sum(case  when salary_component_type = 'hike_percent' then val end) as 'Hike_Percent'
+ 
+
+from emp_compensation
+
+group by emp_id;	
+
+emp_id salary Bonus Hike_Percent
+1	10000	5000	10
+2	15000	7000	8
+3	12000	6000	7
+
+## Want to unpivot the table 
+
+-- Step 1: Create the new table
+CREATE TABLE emp_compensation_pivot (
+    emp_id INT,
+    Salary DECIMAL(10, 2),         -- Adjust data types as needed
+    Bonus DECIMAL(10, 2),
+    Hike_Percent DECIMAL(5, 2)
+);
+
+-- Step 2: Insert aggregated data into the new table
+INSERT INTO emp_compensation_pivot (emp_id, Salary, Bonus, Hike_Percent)
+SELECT
+    emp_id,
+    SUM(CASE WHEN salary_component_type = 'salary' THEN val END) AS Salary,
+    SUM(CASE WHEN salary_component_type = 'bonus' THEN val END) AS Bonus,
+    SUM(CASE WHEN salary_component_type = 'hike_percent' THEN val END) AS Hike_Percent
+FROM emp_compensation
+GROUP BY emp_id;
+
+select * from emp_compensation_pivot;
+
+-- to unpivot we use union 
+
+select * from (select
+emp_id,
+'salary' as salary_component_type, salary as val from emp_compensation_pivot
+union all
+select
+emp_id,'bonus' as salary_component_type, bonus as val from emp_compensation_pivot
+union all
+select
+emp_id,'hike_percent' as salary_component_type, hike_percent as val from emp_compensation_pivot) a
+order by emp_id;
